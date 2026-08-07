@@ -1,0 +1,105 @@
+import { useState, useEffect, useCallback } from "react";
+import TaskForm from "./components/TaskForm";
+import TaskList from "./components/TaskList";
+import History from "./components/History";
+
+const API = "/api/tasks";
+
+async function api(url, options = {}) {
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.status === 204 ? null : res.json();
+}
+
+export default function App() {
+  const [tasks, setTasks] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [error, setError] = useState(null);
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      const data = await api(`${API}/`);
+      setTasks(data);
+    } catch {
+      setError("No se pudo conectar con el servidor");
+    }
+  }, []);
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const data = await api(`${API}/history/`);
+      setHistory(data);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTasks();
+    fetchHistory();
+  }, [fetchTasks, fetchHistory]);
+
+  const addTask = async (name, taskType) => {
+    await api(`${API}/`, {
+      method: "POST",
+      body: JSON.stringify({ name, task_type: taskType }),
+    });
+    await fetchTasks();
+  };
+
+  const completeTask = async (id) => {
+    await api(`${API}/${id}/complete/`, { method: "PATCH" });
+    await fetchTasks();
+    await fetchHistory();
+  };
+
+  const deleteTask = async (id) => {
+    await api(`${API}/${id}/`, { method: "DELETE" });
+    await fetchTasks();
+  };
+
+  const deleteHistoryDay = async (date) => {
+    await api(`${API}/history/?date=${date}`, { method: "DELETE" });
+    await fetchHistory();
+  };
+
+  const pendingCount = tasks.length;
+  const today = new Date().toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  if (error) {
+    return (
+      <div className="app">
+        <header className="header">
+          <h1 className="header-title">Mis Tareas</h1>
+        </header>
+        <p className="error-msg">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app">
+      <header className="header">
+        <p className="header-date">{today}</p>
+        <h1 className="header-title">Mis Tareas</h1>
+        <p className="header-sub">
+          {pendingCount === 0
+            ? "Todo en orden — sin pendientes."
+            : `${pendingCount} ${
+                pendingCount === 1 ? "tarea pendiente" : "tareas pendientes"
+              }`}
+        </p>
+      </header>
+      <TaskForm onAdd={addTask} />
+      <TaskList tasks={tasks} onComplete={completeTask} onDelete={deleteTask} />
+      <History history={history} onDeleteDay={deleteHistoryDay} />
+    </div>
+  );
+}

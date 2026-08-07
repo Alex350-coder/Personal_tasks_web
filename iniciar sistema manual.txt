@@ -1,0 +1,34 @@
+========================================================================
+COMO INICIAR EL SISTEMA (Tareas Simples)
+========================================================================
+
+METODO 1: AUTOMATICO (Recomendado)
+----------------------------------
+Abre una terminal de PowerShell en la raiz del proyecto y ejecuta:
+
+    powershell -ExecutionPolicy Bypass -File .\iniciar.ps1
+
+Esto iniciara automaticamente tanto el backend (Django) como el
+frontend (React/Vite). Presiona cualquier tecla en la terminal para
+detener ambos servidores.
+
+
+METODO 2: MANUAL (En terminales separadas)
+------------------------------------------
+Si prefieres iniciar los servidores por separado, abre dos terminales:
+
+Terminal 1 - BACKEND (Django):
+    cd backend
+    py manage.py runserver 8000
+    (o bien: python manage.py runserver 8000)
+
+Terminal 2 - FRONTEND (React/Vite):
+    cd frontend
+    npx.cmd vite --host
+    (o bien: npm run dev)
+
+========================================================================
+URLs del Sistema:
+- Backend API: http://localhost:8000/api/tasks/
+- Frontend App: http://localhost:5173/
+========================================================================
