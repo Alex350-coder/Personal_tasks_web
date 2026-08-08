@@ -151,3 +151,38 @@ def _auto_complete_stale_dailies():
         task.is_completed = True
         task.completed_at = task.created_at
     Task.objects.bulk_update(stale, ["is_completed", "completed_at"])
+
+
+def _register_daily_template(task):
+    template = DailyTask.objects.filter(name__iexact=task.name).first()
+    if template is None:
+        template = DailyTask.objects.create(name=task.name)
+    elif not template.is_active:
+        template.is_active = True
+        template.save(update_fields=["is_active"])
+    task.daily_template = template
+    task.save(update_fields=["daily_template"])
+
+
+def _reset_dailies():
+    today_start = timezone.make_aware(
+        datetime.combine(timezone.localdate(), datetime.min.time())
+    )
+    with _daily_lock:
+        for template in DailyTask.objects.filter(is_active=True):
+            has_today = Task.objects.filter(
+                daily_template=template, created_at__gte=today_start
+            ).exists()
+            if not has_today:
+                Task.objects.create(
+                    name=template.name,
+                    task_type="daily",
+                    daily_template=template,
+                )
+
+
+def _stop_template_if_daily(task):
+    template = task.daily_template
+    if template is not None and template.is_active:
+        template.is_active = False
+        template.save(update_fields=["is_active"])
