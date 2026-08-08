@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import TaskForm from "./components/TaskForm";
 import TaskList from "./components/TaskList";
 import History from "./components/History";
+import Heatmap from "./components/Heatmap";
 
 const API = "/api/tasks";
+const ACTIVITY_API = "/api/activity";
 
 async function api(url, options = {}) {
   const res = await fetch(url, {
@@ -17,6 +19,7 @@ async function api(url, options = {}) {
 export default function App() {
   const [tasks, setTasks] = useState([]);
   const [history, setHistory] = useState([]);
+  const [heatmap, setHeatmap] = useState(null);
   const [error, setError] = useState(null);
 
   const fetchTasks = useCallback(async () => {
@@ -40,6 +43,9 @@ export default function App() {
   useEffect(() => {
     fetchTasks();
     fetchHistory();
+    api(`${ACTIVITY_API}/heatmap/`)
+      .then(setHeatmap)
+      .catch(() => {});
   }, [fetchTasks, fetchHistory]);
 
   const addTask = async (name, taskType) => {
@@ -54,6 +60,7 @@ export default function App() {
     await api(`${API}/${id}/complete/`, { method: "PATCH" });
     await fetchTasks();
     await fetchHistory();
+    await refreshHeatmap();
   };
 
   const deleteTask = async (id) => {
@@ -64,6 +71,15 @@ export default function App() {
   const deleteHistoryDay = async (date) => {
     await api(`${API}/history/?date=${date}`, { method: "DELETE" });
     await fetchHistory();
+    await refreshHeatmap();
+  };
+
+  const refreshHeatmap = async () => {
+    try {
+      setHeatmap(await api(`${ACTIVITY_API}/heatmap/`));
+    } catch {
+      /* ignore */
+    }
   };
 
   const pendingCount = tasks.length;
@@ -96,6 +112,7 @@ export default function App() {
                 pendingCount === 1 ? "tarea pendiente" : "tareas pendientes"
               }`}
         </p>
+        <Heatmap data={heatmap} />
       </header>
       <TaskForm onAdd={addTask} />
       <TaskList tasks={tasks} onComplete={completeTask} onDelete={deleteTask} />
