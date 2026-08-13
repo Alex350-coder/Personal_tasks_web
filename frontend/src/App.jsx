@@ -68,6 +68,34 @@ export default function App() {
     await fetchTasks();
   };
 
+  const renameTask = async (id, newName) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    await api(`${API}/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: trimmed }),
+    });
+    await fetchTasks();
+  };
+
+  const moveTask = async (id, direction) => {
+    setTasks((prev) => {
+      const index = prev.findIndex((t) => t.id === id);
+      if (index === -1) return prev;
+      const neighbor = index + (direction === "up" ? -1 : 1);
+      if (neighbor < 0 || neighbor >= prev.length) return prev;
+      if (prev[neighbor].task_type !== prev[index].task_type) return prev;
+
+      const next = [...prev];
+      [next[index], next[neighbor]] = [next[neighbor], next[index]];
+      api(`${API}/reorder/`, {
+        method: "POST",
+        body: JSON.stringify({ ids: next.map((t) => t.id) }),
+      }).catch(() => {});
+      return next;
+    });
+  };
+
   const deleteHistoryDay = async (date) => {
     await api(`${API}/history/?date=${date}`, { method: "DELETE" });
     await fetchHistory();
@@ -115,7 +143,13 @@ export default function App() {
         <Heatmap data={heatmap} />
       </header>
       <TaskForm onAdd={addTask} />
-      <TaskList tasks={tasks} onComplete={completeTask} onDelete={deleteTask} />
+      <TaskList
+        tasks={tasks}
+        onComplete={completeTask}
+        onDelete={deleteTask}
+        onRename={renameTask}
+        onMove={moveTask}
+      />
       <History history={history} onDeleteDay={deleteHistoryDay} />
     </div>
   );

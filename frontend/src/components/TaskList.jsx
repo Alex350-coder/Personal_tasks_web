@@ -8,7 +8,7 @@ const GROUP_LABELS = {
 
 const GROUP_ORDER = ["daily", "medium", "long"];
 
-export default function TaskList({ tasks, onComplete, onDelete }) {
+export default function TaskList({ tasks, onComplete, onDelete, onRename, onMove }) {
   const grouped = {};
   for (const type of GROUP_ORDER) {
     grouped[type] = tasks.filter((t) => t.task_type === type);
@@ -31,12 +31,16 @@ export default function TaskList({ tasks, onComplete, onDelete }) {
                 <span className="group-count">{grouped[type].length}</span>
               </h2>
               <ul className="task-list">
-                {grouped[type].map((task) => (
+                {grouped[type].map((task, i) => (
                   <TaskItem
                     key={task.id}
                     task={task}
+                    canMoveUp={i > 0}
+                    canMoveDown={i < grouped[type].length - 1}
                     onComplete={onComplete}
                     onDelete={onDelete}
+                    onRename={onRename}
+                    onMove={onMove}
                   />
                 ))}
               </ul>

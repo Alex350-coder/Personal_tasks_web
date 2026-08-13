@@ -3,6 +3,7 @@ import threading
 from collections import defaultdict
 from datetime import datetime, timedelta
 
+from django.db.models import Max
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -19,14 +20,15 @@ def task_list(request):
     if request.method == "GET":
         _auto_complete_stale_dailies()
         _reset_dailies()
-        tasks = Task.objects.filter(is_completed=False).order_by("created_at")
+        tasks = Task.objects.filter(is_completed=False).order_by("position", "created_at")
         serializer = TaskSerializer(tasks, many=True)
         return Response(serializer.data)
 
     if request.method == "POST":
         serializer = TaskSerializer(data=request.data)
         if serializer.is_valid():
-            task = serializer.save()
+            position = (Task.objects.aggregate(m=Max("position"))["m"] or 0) + 1
+            task = serializer.save(position=position)
             if task.task_type == "daily":
                 _register_daily_template(task)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -47,16 +49,50 @@ def complete_task(request, pk):
     return Response(serializer.data)
 
 
-@api_view(["DELETE"])
-def delete_task(request, pk):
+@api_view(["PATCH", "DELETE"])
+def task_detail(request, pk):
     try:
         task = Task.objects.get(pk=pk)
     except Task.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+    if request.method == "PATCH":
+        serializer = TaskSerializer(task, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        _rename_daily_template(task)
+        serializer = TaskSerializer(task)
+        return Response(serializer.data)
+
     _stop_template_if_daily(task)
     task.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(["POST"])
+def reorder_tasks(request):
+    ids = request.data.get("ids")
+    if not isinstance(ids, list):
+        return Response(
+            {"ids": "Se espera una lista de ids."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    pending = set(
+        Task.objects.filter(is_completed=False).values_list("id", flat=True)
+    )
+    for task_id in ids:
+        if not isinstance(task_id, int) or task_id not in pending:
+            return Response(
+                {"ids": "La lista contiene ids no válidos."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    with _daily_lock:
+        for position, task_id in enumerate(ids):
+            Task.objects.filter(pk=task_id).update(position=position)
+
+    return Response({"ok": True})
 
 
 @api_view(["GET", "DELETE"])
@@ -186,3 +222,10 @@ def _stop_template_if_daily(task):
     if template is not None and template.is_active:
         template.is_active = False
         template.save(update_fields=["is_active"])
+
+
+def _rename_daily_template(task):
+    template = task.daily_template
+    if template is not None and template.name != task.name:
+        template.name = task.name
+        template.save(update_fields=["name"])

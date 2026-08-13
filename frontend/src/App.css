@@ -528,6 +528,57 @@ body {
   word-break: break-word;
 }
 
+/* ---------- Acciones de tarea (mover / renombrar / eliminar) ---------- */
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.task-move {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-right: 4px;
+}
+
+.btn-move {
+  width: 26px;
+  height: 18px;
+  font-size: 0.8rem;
+  line-height: 1;
+  border-radius: 6px;
+}
+
+.btn-move:disabled {
+  opacity: 0.3;
+  cursor: default;
+  background: transparent;
+  color: var(--text-soft);
+  transform: none;
+}
+
+.btn-edit:hover {
+  background: var(--yellow-wash);
+  color: var(--amber-ink);
+}
+
+.task-edit-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 0.98rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--yellow);
+  border-radius: var(--r-sm);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(247, 201, 72, 0.22);
+}
+
 /* ---------- Estado vacío ---------- */
 .empty-msg {
   text-align: center;
