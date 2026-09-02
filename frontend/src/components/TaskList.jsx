@@ -8,9 +8,16 @@ const GROUP_LABELS = {
 
 const GROUP_ORDER = ["daily", "medium", "long"];
 
-export default function TaskList({ tasks, onComplete, onDelete, onRename, onMove }) {
+export default function TaskList({
+  tasks,
+  types = GROUP_ORDER,
+  onComplete,
+  onDelete,
+  onRename,
+  onMove,
+}) {
   const grouped = {};
-  for (const type of GROUP_ORDER) {
+  for (const type of types) {
     grouped[type] = tasks.filter((t) => t.task_type === type);
   }
 
@@ -21,7 +28,7 @@ export default function TaskList({ tasks, onComplete, onDelete, onRename, onMove
 
   return (
     <div className="task-groups">
-      {GROUP_ORDER.map(
+      {types.map(
         (type) =>
           grouped[type].length > 0 && (
             <section key={type} className={`task-group group-${type}`}>
