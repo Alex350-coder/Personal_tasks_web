@@ -1,4 +1,13 @@
 import { useRef, useState } from "react";
+import {
+  CheckIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  PencilIcon,
+  TrashIcon,
+  ClockIcon,
+} from "./Icons";
+import { formatTimeRange, formatDayRange, isRestDay } from "../utils/schedule";
 
 export default function TaskItem({
   task,
@@ -33,6 +42,11 @@ export default function TaskItem({
     setDraft(task.name);
   };
 
+  const time = formatTimeRange(task);
+  const daysLabel = isRestDay(task.scheduled_days)
+    ? formatDayRange(task.scheduled_days)
+    : "";
+
   return (
     <li className={`task-item type-accent-${task.task_type}`}>
       <button
@@ -41,24 +55,43 @@ export default function TaskItem({
         aria-label={`Completar ${task.name}`}
         onClick={() => onComplete(task.id)}
       >
-        <span className="task-check-mark">✓</span>
+        <span className="task-check-mark">
+          <CheckIcon width={13} height={13} />
+        </span>
       </button>
 
-      {editing ? (
-        <input
-          className="task-edit-input"
-          value={draft}
-          autoFocus
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
-            if (e.key === "Escape") cancel();
-          }}
-        />
-      ) : (
-        <span className="task-name">{task.name}</span>
-      )}
+      <div className="task-main">
+        {editing ? (
+          <input
+            className="task-edit-input"
+            value={draft}
+            autoFocus
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") cancel();
+            }}
+          />
+        ) : (
+          <>
+            <span className="task-name">{task.name}</span>
+            {(time || daysLabel) && (
+              <span className="task-meta">
+                {time && (
+                  <span className="time-badge">
+                    <ClockIcon width={11} height={11} />
+                    {time}
+                  </span>
+                )}
+                {daysLabel && (
+                  <span className="days-badge rest">{daysLabel}</span>
+                )}
+              </span>
+            )}
+          </>
+        )}
+      </div>
 
       <span className="task-actions">
         {!editing && (canMoveUp || canMoveDown) && (
@@ -70,7 +103,7 @@ export default function TaskItem({
               disabled={!canMoveUp}
               onClick={() => onMove(task.id, "up")}
             >
-              ↑
+              <ChevronUpIcon width={15} height={15} />
             </button>
             <button
               className="btn btn-icon btn-move"
@@ -79,7 +112,7 @@ export default function TaskItem({
               disabled={!canMoveDown}
               onClick={() => onMove(task.id, "down")}
             >
-              ↓
+              <ChevronDownIcon width={15} height={15} />
             </button>
           </span>
         )}
@@ -89,7 +122,7 @@ export default function TaskItem({
           aria-label={`Renombrar ${task.name}`}
           onClick={editing ? commit : startEdit}
         >
-          ✎
+          <PencilIcon width={15} height={15} />
         </button>
         <button
           className="btn btn-icon btn-delete"
@@ -97,7 +130,7 @@ export default function TaskItem({
           aria-label={`Eliminar ${task.name}`}
           onClick={() => onDelete(task.id)}
         >
-          🗑
+          <TrashIcon width={15} height={15} />
         </button>
       </span>
     </li>
