@@ -1,7 +1,7 @@
 import bisect
 import threading
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 
 from django.db.models import Max
 from django.utils import timezone
@@ -30,7 +30,12 @@ def task_list(request):
             position = (Task.objects.aggregate(m=Max("position"))["m"] or 0) + 1
             task = serializer.save(position=position)
             if task.task_type == "daily":
-                _register_daily_template(task)
+                _register_daily_template(
+                    task,
+                    scheduled_start=request.data.get("scheduled_start"),
+                    scheduled_end=request.data.get("scheduled_end"),
+                    scheduled_days=request.data.get("scheduled_days"),
+                )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -189,23 +194,62 @@ def _auto_complete_stale_dailies():
     Task.objects.bulk_update(stale, ["is_completed", "completed_at"])
 
 
-def _register_daily_template(task):
+def _parse_time(value):
+    if value is None or value == "":
+        return None
+    if isinstance(value, time):
+        return value
+    try:
+        return datetime.strptime(str(value), "%H:%M").time()
+    except ValueError:
+        pass
+    try:
+        return datetime.strptime(str(value)[:8], "%H:%M:%S").time()
+    except ValueError:
+        return None
+
+
+def _register_daily_template(task, scheduled_start=None, scheduled_end=None, scheduled_days=None):
     template = DailyTask.objects.filter(name__iexact=task.name).first()
     if template is None:
         template = DailyTask.objects.create(name=task.name)
     elif not template.is_active:
         template.is_active = True
         template.save(update_fields=["is_active"])
+
+    # Persistir horario/config de dias en la plantilla solo si viene en el request
+    changed = False
+    start = _parse_time(scheduled_start)
+    if start is not None and start != template.scheduled_start:
+        template.scheduled_start = start
+        changed = True
+    end = _parse_time(scheduled_end)
+    if end is not None and end != template.scheduled_end:
+        template.scheduled_end = end
+        changed = True
+    if scheduled_days is not None:
+        if isinstance(scheduled_days, list):
+            days_csv = ",".join(str(d) for d in scheduled_days)
+        else:
+            days_csv = str(scheduled_days)
+        if days_csv != template.scheduled_days:
+            template.scheduled_days = days_csv
+            changed = True
+    if changed:
+        template.save()
+
     task.daily_template = template
     task.save(update_fields=["daily_template"])
 
 
 def _reset_dailies():
-    today_start = timezone.make_aware(
-        datetime.combine(timezone.localdate(), datetime.min.time())
-    )
+    today = timezone.localdate()
+    today_start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
     with _daily_lock:
         for template in DailyTask.objects.filter(is_active=True):
+            # Si la plantilla define dias especificos, respetarlos
+            if template.days_list() and today.weekday() not in template.days_list():
+                continue
             has_today = Task.objects.filter(
                 daily_template=template, created_at__gte=today_start
             ).exists()

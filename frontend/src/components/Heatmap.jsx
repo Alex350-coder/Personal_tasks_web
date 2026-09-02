@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { FlameIcon } from "./Icons";
 
 const WEEKDAY_LABELS = { 1: "Lun", 3: "Mié", 5: "Vie" };
 const MONTHS = [
@@ -64,7 +65,7 @@ export default function Heatmap({ data }) {
     <div className="heatmap-card">
       <div className="heatmap-summary">
         <span className="heatmap-chip">
-          <span className="heatmap-flame">🔥</span> Racha: {data.current_streak}{" "}
+          <FlameIcon width={13} height={13} /> Racha: {data.current_streak}{" "}
           {data.current_streak === 1 ? "día" : "días"}
         </span>
         <span className="heatmap-chip">
