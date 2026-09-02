@@ -3,6 +3,9 @@ import TaskForm from "./components/TaskForm";
 import TaskList from "./components/TaskList";
 import History from "./components/History";
 import Heatmap from "./components/Heatmap";
+import ScheduleTimeline from "./components/ScheduleTimeline";
+import DailyProgress from "./components/DailyProgress";
+import { CalendarIcon } from "./components/Icons";
 
 const API = "/api/tasks";
 const ACTIVITY_API = "/api/activity";
@@ -48,10 +51,14 @@ export default function App() {
       .catch(() => {});
   }, [fetchTasks, fetchHistory]);
 
-  const addTask = async (name, taskType) => {
+  const addTask = async (name, taskType, schedule = {}) => {
+    const payload = { name, task_type: taskType };
+    if (schedule.scheduled_start) payload.scheduled_start = schedule.scheduled_start;
+    if (schedule.scheduled_end) payload.scheduled_end = schedule.scheduled_end;
+    if (schedule.scheduled_days) payload.scheduled_days = schedule.scheduled_days;
     await api(`${API}/`, {
       method: "POST",
-      body: JSON.stringify({ name, task_type: taskType }),
+      body: JSON.stringify(payload),
     });
     await fetchTasks();
   };
@@ -131,7 +138,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <p className="header-date">{today}</p>
+        <p className="header-date">
+          <CalendarIcon width={13} height={13} />
+          {today}
+        </p>
         <h1 className="header-title">Mis Tareas</h1>
         <p className="header-sub">
           {pendingCount === 0
@@ -140,17 +150,38 @@ export default function App() {
                 pendingCount === 1 ? "tarea pendiente" : "tareas pendientes"
               }`}
         </p>
-        <Heatmap data={heatmap} />
       </header>
-      <TaskForm onAdd={addTask} />
-      <TaskList
-        tasks={tasks}
-        onComplete={completeTask}
-        onDelete={deleteTask}
-        onRename={renameTask}
-        onMove={moveTask}
-      />
-      <History history={history} onDeleteDay={deleteHistoryDay} />
+
+      <DailyProgress tasks={tasks} history={history} />
+
+      <div className="layout-grid">
+        <ScheduleTimeline tasks={tasks} />
+        <TaskList
+          types={["daily"]}
+          tasks={tasks}
+          onComplete={completeTask}
+          onDelete={deleteTask}
+          onRename={renameTask}
+          onMove={moveTask}
+        />
+      </div>
+
+      <div className="layout-grid">
+        <TaskForm onAdd={addTask} />
+        <TaskList
+          types={["medium", "long"]}
+          tasks={tasks}
+          onComplete={completeTask}
+          onDelete={deleteTask}
+          onRename={renameTask}
+          onMove={moveTask}
+        />
+      </div>
+
+      <div className="layout-grid">
+        <Heatmap data={heatmap} />
+        <History history={history} onDeleteDay={deleteHistoryDay} />
+      </div>
     </div>
   );
 }
