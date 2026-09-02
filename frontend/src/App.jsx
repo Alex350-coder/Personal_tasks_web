@@ -154,33 +154,31 @@ export default function App() {
 
       <DailyProgress tasks={tasks} history={history} />
 
-      <div className="layout-grid">
-        <ScheduleTimeline tasks={tasks} />
-        <TaskList
-          types={["daily"]}
-          tasks={tasks}
-          onComplete={completeTask}
-          onDelete={deleteTask}
-          onRename={renameTask}
-          onMove={moveTask}
-        />
-      </div>
-
-      <div className="layout-grid">
-        <TaskForm onAdd={addTask} />
-        <TaskList
-          types={["medium", "long"]}
-          tasks={tasks}
-          onComplete={completeTask}
-          onDelete={deleteTask}
-          onRename={renameTask}
-          onMove={moveTask}
-        />
-      </div>
-
-      <div className="layout-grid">
-        <Heatmap data={heatmap} />
-        <History history={history} onDeleteDay={deleteHistoryDay} />
+      <div className="dashboard-content">
+        <div className="dashboard-column dashboard-column--left">
+          <ScheduleTimeline tasks={tasks} />
+          <TaskForm onAdd={addTask} />
+          <Heatmap data={heatmap} />
+          <History history={history} onDeleteDay={deleteHistoryDay} />
+        </div>
+        <div className="dashboard-column dashboard-column--right">
+          <TaskList
+            types={["daily"]}
+            tasks={tasks}
+            onComplete={completeTask}
+            onDelete={deleteTask}
+            onRename={renameTask}
+            onMove={moveTask}
+          />
+          <TaskList
+            types={["medium", "long"]}
+            tasks={tasks}
+            onComplete={completeTask}
+            onDelete={deleteTask}
+            onRename={renameTask}
+            onMove={moveTask}
+          />
+        </div>
       </div>
     </div>
   );
