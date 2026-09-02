@@ -143,6 +143,7 @@ body {
 /* ---------- Progreso diario ---------- */
 .daily-progress {
   margin-top: var(--space-5);
+  margin-bottom: var(--space-5);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--r-lg);
@@ -309,23 +310,49 @@ body {
   color: var(--color-text-muted);
 }
 
-/* ---------- Layout en rejilla (2 columnas) ---------- */
-.layout-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+/* ---------- Layout: dos columnas independientes ---------- */
+.dashboard-content {
+  display: flex;
   gap: var(--space-4);
   align-items: start;
-  margin-bottom: var(--space-5);
 }
 
-.layout-grid .task-groups {
+.dashboard-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  flex: 1;
+}
+
+.dashboard-column--left {
+  flex: 1.15;
+}
+
+.dashboard-column--right {
+  flex: 1;
+}
+
+.dashboard-column .task-groups {
   margin-bottom: 0;
 }
 
 @media (max-width: 780px) {
-  .layout-grid {
-    grid-template-columns: 1fr;
+  .dashboard-content {
+    display: grid;
+    gap: var(--space-4);
   }
+
+  .dashboard-column {
+    display: contents;
+  }
+
+  .schedule { order: 1; }
+  .task-groups:has(.group-daily) { order: 2; }
+  .task-form { order: 3; }
+  .task-groups:has(.group-medium) { order: 4; }
+  .heatmap-card { order: 5; }
+  .history { order: 6; }
 }
 
 /* ---------- Heatmap ---------- */
