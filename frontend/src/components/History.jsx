@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { TrashIcon, ChevronRightIcon } from "./Icons";
 
 const TYPE_LABELS = { daily: "Diaria", medium: "Medio Plazo", long: "Largo Plazo" };
 
@@ -47,7 +48,9 @@ export default function History({ history, onDeleteDay }) {
         onClick={() => setOpen(!open)}
         aria-expanded={open}
       >
-        <span className={`history-caret ${open ? "is-open" : ""}`}>▸</span>
+        <span className={`history-caret ${open ? "is-open" : ""}`}>
+          <ChevronRightIcon width={14} height={14} />
+        </span>
         <span>Historial</span>
         <span className="history-count">{totalDone}</span>
       </button>
@@ -65,9 +68,10 @@ export default function History({ history, onDeleteDay }) {
                 <button
                   className="btn btn-icon btn-delete"
                   title="Borrar este día"
+                  aria-label={`Borrar historial del ${formatDate(date)}`}
                   onClick={() => onDeleteDay(date)}
                 >
-                  🗑
+                  <TrashIcon width={15} height={15} />
                 </button>
               </div>
               <ul className="history-list">
